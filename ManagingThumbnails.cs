@@ -2,13 +2,13 @@
 using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
-using WallpaperChanger;
 
+namespace WallpaperChanger;
 
 public static class Thumbnails
 {
 
-    public static Dictionary<string, string> Dict = new Dictionary<string, string>();
+    public static Dictionary<string, string> Dict = new();
 
     public static string GetThumbs(string inp, string outp)
     {
@@ -30,7 +30,6 @@ public static class Thumbnails
 
         string thumbpath = Path.Combine(outp, outname);
 
-
         if (! Dict.ContainsKey(keyname))
         {
             Dict.Add(keyname, thumbpath);
@@ -43,8 +42,6 @@ public static class Thumbnails
             bm.Save(thumbpath, ImageFormat.Jpeg);               
         }
 
-        return thumbpath;
-            
+        return thumbpath;           
     }
-
 }
