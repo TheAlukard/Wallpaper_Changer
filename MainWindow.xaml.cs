@@ -11,7 +11,7 @@ public partial class MainWindow : Window
     Dictionary<string, Button> buttons;       
     bool CycleMode = false;
     int index = 0;
-    double width;
+    double width; 
     double height;
 
     public MainWindow()
@@ -23,17 +23,15 @@ public partial class MainWindow : Window
 
     public void startup()
     {
-        if (! CheckFile()) {
+        if (!CheckFile()) {
             BrowseFile();
             SavePath();
-        }
-        else {
-            LoadPath();
+            
         }
 
         GetOutput();
 
-        try {
+        try {          
             GetFiles();
         }
         catch (Exception) {
@@ -74,7 +72,7 @@ public partial class MainWindow : Window
         return image;
     }
 
-    public async void LoadImages()
+    public void LoadImages()
     { 
         foreach (var file in PathHash.Keys) {
             string pp = Thumbnails.GetThumbs(file, output);

@@ -9,16 +9,15 @@ public static class FileManaging
 {
     public static Dictionary<string, string> PathHash = new();
     public static List<string> Files = new();
-    public static string path = "";
     public static string output = "";
     public static readonly string InputPath = "WP_Changer_Input_Path.txt";
+    static string path = "";
     public static void BrowseFile()
     {
         OpenFolderDialog filedialog = new OpenFolderDialog();
         bool? Success = filedialog.ShowDialog();
 
-        if (Success == true)
-        {
+        if (Success == true) {
             path = filedialog.FolderName;
         }
     }
@@ -29,18 +28,20 @@ public static class FileManaging
         File.WriteAllText(filename, path);
     }
 
-    public static void LoadPath()
+    public static string LoadPath()
     {
         string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string filename = Path.Combine(docs, InputPath);
-        string LoadedPath = File.ReadAllText(filename);
+
         try {
-            path = File.ReadAllText(LoadedPath);
+            path = File.ReadAllText(filename);
         }
         catch (Exception) {
             BrowseFile();
             SavePath();
         }
+
+        return path;
     }
 
     public static void GetFiles()
