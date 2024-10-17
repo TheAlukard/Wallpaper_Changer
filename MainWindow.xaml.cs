@@ -11,7 +11,7 @@ public partial class MainWindow : Window
     Dictionary<string, Button> buttons;       
     bool CycleMode = false;
     int index = 0;
-    double width; 
+    double width;
     double height;
 
     public MainWindow()
@@ -23,15 +23,17 @@ public partial class MainWindow : Window
 
     public void startup()
     {
-        if (!CheckFile()) {
+        if (! CheckFile()) {
             BrowseFile();
             SavePath();
-            
+        }
+        else {
+            LoadPath();
         }
 
         GetOutput();
 
-        try {          
+        try {
             GetFiles();
         }
         catch (Exception) {
@@ -126,8 +128,6 @@ public partial class MainWindow : Window
         CreateButtons();
         LoadImages();
         AdjustBtns();
-        width = TheApp.ActualWidth;
-        height = TheApp.ActualHeight;
         TheApp.SizeChanged += (e, s) => AdjustBtns();
     }
 
