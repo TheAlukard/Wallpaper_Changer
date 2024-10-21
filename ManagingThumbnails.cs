@@ -7,39 +7,25 @@ namespace WallpaperChanger;
 
 public static class Thumbnails
 {
-
-    public static Dictionary<string, string> Dict = new();
-
-    public static string GetThumbs(string inp, string outp)
+    public static string GetThumbnail(string file, string output)
     {
-
-        var file = inp;
-
-        if (! Directory.Exists(outp))
+        if (! Directory.Exists(output))
         {
-            Directory.CreateDirectory(outp);
+            Directory.CreateDirectory(output);
         }
         
         string keyname = FileManaging.PathHash[file];
+        string outname = keyname + ".jpg";
+        string thumbpath = Path.Combine(output, outname);
 
-        int index = keyname.LastIndexOf('.');
-
-        string pname = keyname.Remove(index, 1);
-
-        string outname = pname + ".jpg";
-
-        string thumbpath = Path.Combine(outp, outname);
-
-        if (! Dict.ContainsKey(keyname))
+        if (!File.Exists(thumbpath))
         {
-            Dict.Add(keyname, thumbpath);
-        }           
-
-        if (! File.Exists(thumbpath))
-        {
-            Image image = Image.FromFile(file);
-            Bitmap bm = new Bitmap(image, new Size(200, 113));
-            bm.Save(thumbpath, ImageFormat.Jpeg);               
+            Size size = new(200, 133);
+            using (Image image = Image.FromFile(file)) {
+                using (Bitmap bm = new Bitmap(image, size)) {
+                    bm.Save(thumbpath, ImageFormat.Jpeg);
+                }
+            }              
         }
 
         return thumbpath;           

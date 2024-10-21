@@ -5,10 +5,21 @@ using static WallpaperChanger.FileManaging;
 
 namespace WallpaperChanger;
 
+struct ButtonWithFilename
+{
+    public Button button;
+    public string filename;
+
+    public ButtonWithFilename(Button b, string f)
+    {
+        button = b;
+        filename = f;
+    }
+}
+
 public partial class MainWindow : Window
-{  
-    static bool failedload = false;
-    Dictionary<string, Button> buttons;       
+{
+    List<ButtonWithFilename> buttons = new();       
     bool CycleMode = false;
     int index = 0;
     double width;
@@ -30,37 +41,20 @@ public partial class MainWindow : Window
         else {
             LoadPath();
         }
-
-        GetOutput();
-
-        try {
-            GetFiles();
-        }
-        catch (Exception) {
-            failedload = true;
-        }
-    }
-
-    public void GetReady()
-    {
-        GetFiles();
-        GetOutput();
-        GetHashes();
-        CreateButtons();
-        LoadImages();
     }
 
     public void CreateButtons()
     {
-        buttons = new();
         PhotoGrid.Children.Clear();
-        foreach (var filename in PathHash.Keys)
+        buttons.Clear();
+        foreach (string filename in PathHash.Keys)
         {
-            Button text = new Button();
-            text.Click += (e, s) => SetWallpaper.changeWallpaper(filename);
-            PhotoGrid.Children.Add(text);
-            text.Background = System.Windows.Media.Brushes.Transparent;
-            buttons.Add(filename, text);
+            Button button = new();
+            button.Click += (e, s) => SetWallpaper.changeWallpaper(filename);
+            button.Background = System.Windows.Media.Brushes.Transparent;
+            ButtonWithFilename bwf = new(button, filename);
+            buttons.Add(bwf);
+            PhotoGrid.Children.Add(button);
         }
     }  
 
@@ -76,9 +70,12 @@ public partial class MainWindow : Window
 
     public void LoadImages()
     { 
-        foreach (var file in PathHash.Keys) {
-            string pp = Thumbnails.GetThumbs(file, output);
-            buttons[file].Content = GetTheImage(pp);         
+        foreach (ButtonWithFilename bwf in buttons) {
+            string thumbnail_path = Thumbnails.GetThumbnail(bwf.filename, output);
+            Dispatcher.Invoke(() =>
+            {
+                bwf.button.Content = GetTheImage(thumbnail_path);
+            }); 
         }
     }
 
@@ -120,14 +117,20 @@ public partial class MainWindow : Window
         GetReady();
     }
 
-    private void TheApp_Loaded(object sender, RoutedEventArgs e)
+    public void GetReady()
     {
-        if (failedload) return;
-
+        GetFiles();
+        GetOutput();
         GetHashes();
         CreateButtons();
-        LoadImages();
+        Thread t = new(() => LoadImages());
+        t.Start();
         AdjustBtns();
+    }
+
+    private void TheApp_Loaded(object sender, RoutedEventArgs e)
+    {
+        GetReady();
         TheApp.SizeChanged += (e, s) => AdjustBtns();
     }
 

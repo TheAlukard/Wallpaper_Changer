@@ -7,7 +7,7 @@ namespace WallpaperChanger;
 
 public static class FileManaging
 {
-    public static Dictionary<string, string> PathHash = new();
+    public static Dictionary<string, string> PathHash;
     public static List<string> Files = new();
     public static string path = "";
     public static string output = "";
@@ -46,6 +46,7 @@ public static class FileManaging
     {
         string[] files = Directory.GetFiles(path);
         string[] extensions = { ".png", ".jpeg", ".jpg" };
+        Files.Clear();
         foreach (string file in files)
         {
             string ext = Path.GetExtension(file);
@@ -106,6 +107,7 @@ public static class FileManaging
 
     public static void GetHashes()
     {
+        PathHash = new();
         foreach (string file in Files)
         {
             string hash = GetKeyName(file);
