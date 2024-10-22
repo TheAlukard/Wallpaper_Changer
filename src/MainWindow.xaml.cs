@@ -47,8 +47,7 @@ public partial class MainWindow : Window
     {
         PhotoGrid.Children.Clear();
         buttons.Clear();
-        foreach (string filename in PathHash.Keys)
-        {
+        foreach (string filename in PathHash.Keys) {
             Button button = new();
             button.Click += (e, s) => SetWallpaper.changeWallpaper(filename);
             button.Background = System.Windows.Media.Brushes.Transparent;
@@ -61,8 +60,7 @@ public partial class MainWindow : Window
     public Image GetTheImage(string thep)
     {
         Uri uri = new Uri(thep);
-        Image image = new Image
-        {
+        Image image = new Image {
             Source = new BitmapImage(uri)
         };
         return image;
@@ -72,8 +70,7 @@ public partial class MainWindow : Window
     { 
         foreach (ButtonWithFilename bwf in buttons) {
             string thumbnail_path = Thumbnails.GetThumbnail(bwf.filename, output);
-            Dispatcher.Invoke(() =>
-            {
+            Dispatcher.Invoke(() => {
                 bwf.button.Content = GetTheImage(thumbnail_path);
             }); 
         }
@@ -83,12 +80,11 @@ public partial class MainWindow : Window
     {
         width = TheApp.ActualWidth;
         height = TheApp.ActualHeight;
-        int ActW = Convert.ToInt32(Math.Ceiling(width));                           
+        int ActW = Convert.ToInt32(Math.Ceiling(width));
         int numC = 2;
         int numR = 50;
 
-        try
-        { 
+        try { 
             numC =  ActW / 180 ;
             if (numC < 2)
             {
@@ -96,8 +92,7 @@ public partial class MainWindow : Window
             }
             numR = buttons.Count / numC;
         }
-        catch (Exception)
-        {
+        catch (Exception) {
             return;
         }
             
@@ -150,14 +145,12 @@ public partial class MainWindow : Window
 
     private void ToggleMode_Click(object sender, RoutedEventArgs e)
     {
-        if (CycleMode)
-        {
+        if (CycleMode) {
             ThePhotos.Visibility = Visibility.Visible;
             Cycler.Visibility = Visibility.Hidden;
             CycleMode = false;
         }
-        else
-        {         
+        else {         
             ThePhotos.Visibility = Visibility.Hidden;
             Cycler.Visibility = Visibility.Visible;
             CycleMode = true;

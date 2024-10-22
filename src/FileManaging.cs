@@ -17,8 +17,7 @@ public static class FileManaging
         OpenFolderDialog filedialog = new OpenFolderDialog();
         bool? Success = filedialog.ShowDialog();
 
-        if (Success == true)
-        {
+        if (Success == true) {
             path = filedialog.FolderName;
         }
     }
@@ -47,11 +46,9 @@ public static class FileManaging
         string[] files = Directory.GetFiles(path);
         string[] extensions = { ".png", ".jpeg", ".jpg" };
         Files.Clear();
-        foreach (string file in files)
-        {
+        foreach (string file in files) {
             string ext = Path.GetExtension(file);
-            if (extensions.Contains(ext))
-            {
+            if (extensions.Contains(ext)) {
                 Files.Add(file);
             }
         }
@@ -61,8 +58,7 @@ public static class FileManaging
     {
         string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string filename = Path.Combine(docs, InputPath);
-        if (File.Exists(filename))
-        {
+        if (File.Exists(filename)) {
             return true;
         }
         return false;
@@ -71,10 +67,8 @@ public static class FileManaging
     public static void GetOutput()
     {
         int start = 0;
-        for (int i = path.Length - 1; i >= 0; i--)
-        {
-            if (path[i] == '\\' || path[i] == '/')
-            {
+        for (int i = path.Length - 1; i >= 0; i--) {
+            if (path[i] == '\\' || path[i] == '/') {
                 start = i + 1;
                 break;
             }
@@ -87,10 +81,8 @@ public static class FileManaging
 
     public static string GetHash(string filename)
     {
-        using (var md5 = MD5.Create())
-        {
-            using (var stream = File.OpenRead(filename))
-            {
+        using (var md5 = MD5.Create()) {
+            using (var stream = File.OpenRead(filename)) {
                 var hash = md5.ComputeHash(stream);
                 string jj = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
                 return jj;
@@ -108,8 +100,7 @@ public static class FileManaging
     public static void GetHashes()
     {
         PathHash = new();
-        foreach (string file in Files)
-        {
+        foreach (string file in Files) {
             string hash = GetKeyName(file);
             PathHash.Add(file, hash);
         }
