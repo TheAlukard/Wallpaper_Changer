@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using static WallpaperChanger.FileManaging;
 
@@ -49,17 +50,27 @@ public partial class MainWindow : Window
         buttons.Clear();
         foreach (string filename in PathHash.Keys) {
             Button button = new();
-            button.Click += (e, s) => SetWallpaper.changeWallpaper(filename);
+            button.Click += (s, e) => SetWallpaper.changeWallpaper(filename);
+            button.MouseMove += (s, e) => DragAndDrop(s, e, filename);
             button.Background = System.Windows.Media.Brushes.Transparent;
             ButtonWithFilename bwf = new(button, filename);
             buttons.Add(bwf);
             PhotoGrid.Children.Add(button);
         }
-    }  
+    }
 
-    public Image GetTheImage(string thep)
+    public void DragAndDrop(Object sender, MouseEventArgs e, string filename)
     {
-        Uri uri = new Uri(thep);
+        if (e.RightButton != MouseButtonState.Pressed) return;
+
+        DataObject data = new();
+        data.SetFileDropList(new() { filename });
+        DragDrop.DoDragDrop(TheApp, data, DragDropEffects.Copy);
+    }
+
+    public Image GetTheImage(string image_path)
+    {
+        Uri uri = new Uri(image_path);
         Image image = new Image {
             Source = new BitmapImage(uri)
         };
