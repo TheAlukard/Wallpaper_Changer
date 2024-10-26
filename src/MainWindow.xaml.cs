@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Specialized;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -66,6 +67,28 @@ public partial class MainWindow : Window
         DataObject data = new();
         data.SetFileDropList(new() { filename });
         DragDrop.DoDragDrop(TheApp, data, DragDropEffects.Copy);
+    }
+
+    public void GetDropped(object sender, DragEventArgs e)
+    {
+        DataObject data = (DataObject)e.Data;
+        StringCollection files = data.GetFileDropList();
+
+        foreach (string file in files) {
+            if (PathHash.ContainsKey(file)) continue;
+
+            Files.Add(file);
+            PathHash.Add(file, GetHash(file));
+            Button button = new();
+            button.Click += (s, e) => SetWallpaper.changeWallpaper(file);
+            button.MouseMove += (s, e) => DragAndDrop(s, e, file);
+            button.Background = System.Windows.Media.Brushes.Transparent;
+            ButtonWithFilename bwf = new(button, file);
+            buttons.Add(bwf);
+            button.Content = GetTheImage(Thumbnails.GetThumbnail(file, output));
+            PhotoGrid.Children.Add(button);
+            AdjustBtns();
+        }
     }
 
     public Image GetTheImage(string image_path)

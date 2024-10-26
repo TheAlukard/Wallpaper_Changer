@@ -9,7 +9,9 @@
         Background="#2e3136"
         Height="450" Width="800"
         x:Name="TheApp"
-        Loaded="TheApp_Loaded">
+        Loaded="TheApp_Loaded"
+        AllowDrop="True"
+        Drop="GetDropped">
 
     <Grid>
 
