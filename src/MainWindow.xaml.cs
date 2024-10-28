@@ -1,4 +1,6 @@
 ﻿using System.Collections.Specialized;
+using System.Drawing.Text;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -45,18 +47,27 @@ public partial class MainWindow : Window
         }
     }
 
+    public Button CreateAButton(string file)
+    {
+        Button button = new();
+        button.Click += (s, e) => SetWallpaper.changeWallpaper(file);
+        button.MouseMove += (s, e) => DragAndDrop(s, e, file);
+        button.PreviewMouseRightButtonDown += (s, e) => ShowProperties(s, e, file);
+        button.PreviewMouseRightButtonUp += (s, e) => HideProperties(button, file);
+        button.Background = System.Windows.Media.Brushes.Transparent;
+        ButtonWithFilename bwf = new(button, file);
+        buttons.Add(bwf);
+        PhotoGrid.Children.Add(button);
+
+        return button;
+    }
+
     public void CreateButtons()
     {
         PhotoGrid.Children.Clear();
         buttons.Clear();
-        foreach (string filename in PathHash.Keys) {
-            Button button = new();
-            button.Click += (s, e) => SetWallpaper.changeWallpaper(filename);
-            button.MouseMove += (s, e) => DragAndDrop(s, e, filename);
-            button.Background = System.Windows.Media.Brushes.Transparent;
-            ButtonWithFilename bwf = new(button, filename);
-            buttons.Add(bwf);
-            PhotoGrid.Children.Add(button);
+        foreach (string file in PathHash.Keys) {
+            CreateAButton(file);
         }
     }
 
@@ -79,16 +90,39 @@ public partial class MainWindow : Window
 
             Files.Add(file);
             PathHash.Add(file, GetHash(file));
-            Button button = new();
-            button.Click += (s, e) => SetWallpaper.changeWallpaper(file);
-            button.MouseMove += (s, e) => DragAndDrop(s, e, file);
-            button.Background = System.Windows.Media.Brushes.Transparent;
-            ButtonWithFilename bwf = new(button, file);
-            buttons.Add(bwf);
-            button.Content = GetTheImage(Thumbnails.GetThumbnail(file, output));
-            PhotoGrid.Children.Add(button);
+            CreateAButton(file).Content = GetTheImage(Thumbnails.GetThumbnail(file, output));
             AdjustBtns();
         }
+    }
+
+    public void ShowProperties(object sender, MouseEventArgs e, string file)
+    {
+        FileInfo info = new(file);
+
+        Button button = sender as Button;
+
+        button.Background = System.Windows.Media.Brushes.LightGray;
+  
+        using (FileStream fs = new FileStream(info.FullName, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+            BitmapSource img = BitmapFrame.Create(fs);
+            TextBlock tb = new() {
+                Text = $"res:    {img.PixelWidth} x {img.PixelHeight}\n" +
+                       $"name:   {info.Name}\n" +
+                       $"format: {info.Extension.Substring(1)}\n" +
+                       $"size:   {(((double)info.Length / (1024 * 1024))).ToString("#.00")} MB\n",
+                Background = System.Windows.Media.Brushes.Transparent,
+                FontFamily = new("Cascadia Code Mono"),
+                FontSize = 11,
+            };
+            tb.MouseRightButtonDown += (s, e) => HideProperties(button, file);
+            button.Content = tb;
+        }
+    }
+
+    public void HideProperties(Button button, string file)
+    {
+        button.Content = GetTheImage(Thumbnails.GetThumbnail(file, output));
+        button.Background = System.Windows.Media.Brushes.Transparent;
     }
 
     public Image GetTheImage(string image_path)
