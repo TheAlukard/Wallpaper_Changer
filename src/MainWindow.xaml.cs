@@ -4,20 +4,24 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using static WallpaperChanger.FileManaging;
 
 namespace WallpaperChanger;
 
-struct ButtonWithFilename
+public struct ButtonWithFilename
 {
     public Button button;
     public string filename;
+    public TextBlock text_block;
 
     public ButtonWithFilename(Button b, string f)
     {
         button = b;
         filename = f;
+        text_block = new();
+        text_block.Text = "";
     }
 }
 
@@ -52,10 +56,10 @@ public partial class MainWindow : Window
         Button button = new();
         button.Click += (s, e) => SetWallpaper.changeWallpaper(file);
         button.MouseMove += (s, e) => DragAndDrop(s, e, file);
-        button.PreviewMouseRightButtonDown += (s, e) => ShowProperties(s, e, file);
-        button.PreviewMouseRightButtonUp += (s, e) => HideProperties(button, file);
         button.Background = System.Windows.Media.Brushes.Transparent;
         ButtonWithFilename bwf = new(button, file);
+        button.PreviewMouseRightButtonDown += (s, e) => ShowProperties(s, e, file, bwf.text_block);
+        button.PreviewMouseRightButtonUp += (s, e) => HideProperties(button, file); 
         buttons.Add(bwf);
         PhotoGrid.Children.Add(button);
 
@@ -95,28 +99,38 @@ public partial class MainWindow : Window
         }
     }
 
-    public void ShowProperties(object sender, MouseEventArgs e, string file)
-    {
-        FileInfo info = new(file);
-
+    public void ShowProperties(object sender, MouseEventArgs e, string file, TextBlock tb)
+    { 
         Button button = sender as Button;
 
         button.Background = System.Windows.Media.Brushes.LightGray;
-  
-        using (FileStream fs = new FileStream(info.FullName, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-            BitmapSource img = BitmapFrame.Create(fs);
-            TextBlock tb = new() {
-                Text = $"res:    {img.PixelWidth} x {img.PixelHeight}\n" +
+
+        if (tb.Text == "") {
+            FileInfo info = new(file);
+            BitmapSource img;
+
+            using (FileStream fs = new FileStream(info.FullName, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                img = BitmapFrame.Create(fs);
+            }
+
+            const int padding = 10;
+            tb.Text =  $"res:    {img.PixelWidth} x {img.PixelHeight}\n" +
                        $"name:   {info.Name}\n" +
                        $"format: {info.Extension.Substring(1)}\n" +
-                       $"size:   {(((double)info.Length / (1024 * 1024))).ToString("#.00")} MB\n",
-                Background = System.Windows.Media.Brushes.Transparent,
-                FontFamily = new("Cascadia Code Mono"),
-                FontSize = 11,
-            };
+                       $"size:   {(((double)info.Length / (1024 * 1024))).ToString("#0.000")} MB\n";
+            tb.Background = System.Windows.Media.Brushes.Transparent;
+            tb.FontFamily = new("Cascadia Code Mono");
+            tb.FontSize = 11;
+            tb.Width = button.ActualWidth - padding;
+            tb.Height = button.ActualHeight - padding;
+            tb.VerticalAlignment = VerticalAlignment.Center;
+            tb.HorizontalAlignment = HorizontalAlignment.Center;
+            tb.TextAlignment = TextAlignment.Left;
+
             tb.MouseRightButtonDown += (s, e) => HideProperties(button, file);
-            button.Content = tb;
         }
+        
+        button.Content = tb;
     }
 
     public void HideProperties(Button button, string file)
