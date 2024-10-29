@@ -70,7 +70,7 @@ public partial class MainWindow : Window
     {
         PhotoGrid.Children.Clear();
         buttons.Clear();
-        foreach (string file in PathHash.Keys) {
+        foreach (string file in Files) {
             CreateAButton(file);
         }
     }

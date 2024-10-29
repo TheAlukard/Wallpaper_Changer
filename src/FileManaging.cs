@@ -11,7 +11,7 @@ public static class FileManaging
     public static List<string> Files = new();
     public static string path = "";
     public static string output = "";
-    public static readonly string InputPath = "WP_Changer_Input_Path.txt";
+    public static readonly string InputPath = "WP_Changer\\Input_Path.txt";
     public static void BrowseFile()
     {
         OpenFolderDialog filedialog = new OpenFolderDialog();
@@ -75,7 +75,7 @@ public static class FileManaging
         }
         string Doc = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string name = path.Substring(start);
-        string FinalOutPath = $"WP_Thumbnails\\{name}_Thumbnails";
+        string FinalOutPath = $"WP_Changer\\Thumbnails";
         output = Path.Combine(Doc, FinalOutPath);
     }
 
