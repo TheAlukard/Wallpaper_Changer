@@ -59,7 +59,7 @@ public partial class MainWindow : Window
         button.Background = System.Windows.Media.Brushes.Transparent;
         ButtonWithFilename bwf = new(button, file);
         button.PreviewMouseRightButtonDown += (s, e) => ShowProperties(s, e, file, bwf.text_block);
-        button.PreviewMouseRightButtonUp += (s, e) => HideProperties(button, file); 
+        button.PreviewMouseRightButtonUp += (s, e) => HideProperties(button, file);
         buttons.Add(bwf);
         PhotoGrid.Children.Add(button);
 
@@ -70,8 +70,8 @@ public partial class MainWindow : Window
     {
         PhotoGrid.Children.Clear();
         buttons.Clear();
-        foreach (string file in Files) {
-            CreateAButton(file);
+        for (int i = 0; i < Files.Count; i++) {
+            CreateAButton(Files[i]);
         }
     }
 
@@ -148,6 +148,12 @@ public partial class MainWindow : Window
         return image;
     }
 
+    public void LoadAnImage(Button button, string file)
+    {
+        string thumbnail_path = Thumbnails.GetThumbnail(file, output);
+        Dispatcher.Invoke(() => button.Content = GetTheImage(thumbnail_path));
+    }
+
     public void LoadImages()
     { 
         foreach (ButtonWithFilename bwf in buttons) {
@@ -155,6 +161,32 @@ public partial class MainWindow : Window
             Dispatcher.Invoke(() => {
                 bwf.button.Content = GetTheImage(thumbnail_path);
             }); 
+        }
+    }
+
+    public void setup_helper(List<ButtonWithFilename> files)
+    {
+        for (int i = 0; i < files.Count; i++) {
+            LoadAnImage(files[i].button, files[i].filename);    
+        }
+    }
+
+    public void setup()
+    {
+        CreateButtons();
+        AdjustBtns();
+
+        int images_per_thread = 50;
+        int threads = (int)Math.Ceiling((double)Files.Count / images_per_thread);
+
+        for (int i = 0; i < threads; i++) {
+            int start = i * images_per_thread;
+            int end = (i + 1) * images_per_thread;
+            if (end > buttons.Count) end = buttons.Count;
+
+            Thread t = new(() => setup_helper(buttons.Slice(start, end - start)));
+            t.Start();
+            t.IsBackground = true;
         }
     }
 
@@ -177,7 +209,7 @@ public partial class MainWindow : Window
         catch (Exception) {
             return;
         }
-            
+
         PhotoGrid.Columns = numC;
         PhotoGrid.Rows = numR + 1;
     }
@@ -199,10 +231,11 @@ public partial class MainWindow : Window
         GetFiles();
         GetOutput();
         GetHashes();
-        CreateButtons();
-        Thread t = new(() => LoadImages());
-        t.Start();
-        AdjustBtns();
+        //CreateButtons();
+        //Thread t = new(() => LoadImages());
+        //t.Start();
+        setup();
+        AdjustBtns();   
     }
 
     private void TheApp_Loaded(object sender, RoutedEventArgs e)
