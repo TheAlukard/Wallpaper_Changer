@@ -1,21 +1,27 @@
 ﻿using Microsoft.Win32;
 using System.Collections.Generic;
+using System.Drawing.Text;
+using System.Windows.Media.Animation;
+using System.Drawing.Imaging;
+using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
+using System.Windows.Media.Imaging;
 
 namespace WallpaperChanger;
 
-public static class FileManaging
+public class FileManager
 {
-    public static Dictionary<string, string> PathHash;
-    public static List<string> Files = new();
-    public static string path = "";
-    public static string output = "";
-    public static readonly string InputPath = "WP_Changer\\Input_Path.txt";
-    public static int FilesPerThread;
-    public static int NThreads;
-    public static Thread[] HashingThreads;
-    public static void BrowseFile()
+    public Dictionary<string, string> PathHash;
+    public List<string> Files = new();
+    public string path = "";
+    public string output = "";
+    public readonly string InputPath = "WP_Changer\\Input_Path.txt";
+    public int FilesPerThread;
+    public int NThreads;
+    public Thread[] HashingThreads;
+
+    public void BrowseFile()
     {
         OpenFolderDialog filedialog = new OpenFolderDialog();
         bool? Success = filedialog.ShowDialog();
@@ -24,14 +30,15 @@ public static class FileManaging
             path = filedialog.FolderName;
         }
     }
-    public static void SavePath()
+
+    public void SavePath()
     {
         string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string filename = Path.Combine(docs, InputPath);
         File.WriteAllText(filename, path);
     }
 
-    public static void LoadPath()
+    public void LoadPath()
     {
         string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string filename = Path.Combine(docs, InputPath);
@@ -44,7 +51,7 @@ public static class FileManaging
         }
     }
 
-    public static void GetFiles()
+    public void GetFiles()
     {
         string[] files = Directory.GetFiles(path);
         string[] extensions = { ".png", ".jpeg", ".jpg" };
@@ -57,7 +64,7 @@ public static class FileManaging
         }
     }
 
-    public static bool CheckFile()
+    public bool CheckFile()
     {
         string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string filename = Path.Combine(docs, InputPath);
@@ -67,7 +74,7 @@ public static class FileManaging
         return false;
     }
 
-    public static void GetOutput()
+    public void GetOutput()
     {
         int start = 0;
         for (int i = path.Length - 1; i >= 0; i--) {
@@ -82,7 +89,7 @@ public static class FileManaging
         output = Path.Combine(Doc, FinalOutPath);
     }
 
-    public static string GetHash(string filename)
+    public string GetHash(string filename)
     {
         using (var md5 = MD5.Create()) {
             using (var stream = File.OpenRead(filename)) {
@@ -93,21 +100,14 @@ public static class FileManaging
         }
     }
 
-    public static string GetKeyName(string file)
+    public string GetKeyName(string file)
     {
         string ex = Path.GetExtension(file);
         string hash = GetHash(file);
         return hash + ex;
     }
     
-    public static void GetKeyName(string file, out string result)
-    {
-        string ex = Path.GetExtension(file);
-        string hash = GetHash(file);
-        result = hash + ex;
-    }
-
-    public static void GetHashesHelper(List<string> files)
+    public void GetHashesHelper(List<string> files)
     {
         for (int i = 0; i < files.Count; i++) {
             string hash = GetKeyName(files[i]);
@@ -117,7 +117,7 @@ public static class FileManaging
         }
     }
 
-    public static void GetHashes()
+    public void GetHashes()
     {
         PathHash = new();
         FilesPerThread = 50;
@@ -133,5 +133,38 @@ public static class FileManaging
             HashingThreads[i].IsBackground = true;
             HashingThreads[i].Start();
         }
+    }
+
+    public string GetThumbnail(string file, string output)
+    {
+        if (!Directory.Exists(output)) {
+            Directory.CreateDirectory(output);
+        }
+
+        string keyname = PathHash[file];
+        string outname = keyname + ".jpg";
+        string thumbpath = Path.Combine(output, outname);
+
+        if (!File.Exists(thumbpath)) {
+            Size size = new(200, 133);
+            using (Image image = Image.FromFile(file)) {
+                using (Bitmap bm = new Bitmap(image, size)) {
+                    bm.Save(thumbpath, ImageFormat.Jpeg);
+                }
+            }
+        }
+
+        return thumbpath;
+    }
+
+    public System.Windows.Controls.Image GetImage(string image_path)
+    {
+        Uri uri = new Uri(image_path);
+        System.Windows.Controls.Image image = new()
+        {
+            Source = new BitmapImage(uri)
+        };
+
+        return image;
     }
 }

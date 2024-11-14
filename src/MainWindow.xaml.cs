@@ -7,28 +7,15 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
-using static WallpaperChanger.FileManaging;
 
 namespace WallpaperChanger;
 
-public struct ButtonWithFilename
-{
-    public Button button;
-    public string filename;
-    public TextBlock text_block;
-
-    public ButtonWithFilename(Button b, string f)
-    {
-        button = b;
-        filename = f;
-        text_block = new();
-        text_block.Text = "";
-    }
-}
 
 public partial class MainWindow : Window
 {
-    Dictionary<string, Button> buttons = new();      
+    Dictionary<string, Button> buttons = new();
+    FileManager file_manager = new();
+    EventManager events;
     bool CycleMode = false;
     int index = 0;
     double width;
@@ -43,23 +30,30 @@ public partial class MainWindow : Window
 
     public void startup()
     {
-        if (! CheckFile()) {
-            BrowseFile();
-            SavePath();
+        if (! file_manager.CheckFile()) {
+            file_manager.BrowseFile();
+            file_manager.SavePath();
         }
         else {
-            LoadPath();
+            file_manager.LoadPath();
         }
+
+        events = new(this, file_manager);
+    }
+
+    public void GetDropped(object sender, DragEventArgs e)
+    {
+        events.GetDropped(sender, e, CreateAButton, AdjustBtns);
     }
 
     public Button CreateAButton(string file)
     {
         Button button = new();
         button.Click += (s, e) => SetWallpaper.changeWallpaper(file);
-        button.MouseMove += (s, e) => DragAndDrop(s, e, file);
+        button.MouseMove += (s, e) => events.DragAndDrop(s, e, file);
         button.Background = System.Windows.Media.Brushes.Transparent;
-        button.PreviewMouseRightButtonDown += (s, e) => ShowProperties(s, e, file, new());
-        button.PreviewMouseRightButtonUp += (s, e) => HideProperties(button, file);
+        button.PreviewMouseRightButtonDown += (s, e) => events.ShowProperties(s, e, file, new());
+        button.PreviewMouseRightButtonUp += (s, e) => events.HideProperties(button, file);
 
         lock (buttons) {
             buttons.Add(file, button);
@@ -70,92 +64,10 @@ public partial class MainWindow : Window
         return button;
     }
 
-    public void CreateButtons()
-    {
-        PhotoGrid.Children.Clear();
-        buttons.Clear();
-        for (int i = 0; i < Files.Count; i++) {
-            CreateAButton(Files[i]);
-        }
-    }
-
-    public void DragAndDrop(Object sender, MouseEventArgs e, string filename)
-    {
-        if (e.RightButton != MouseButtonState.Pressed) return;
-
-        DataObject data = new();
-        data.SetFileDropList(new() { filename });
-        DragDrop.DoDragDrop(TheApp, data, DragDropEffects.Copy);
-    }
-
-    public void GetDropped(object sender, DragEventArgs e)
-    {
-        DataObject data = (DataObject)e.Data;
-        StringCollection files = data.GetFileDropList();
-
-        foreach (string file in files) {
-            if (PathHash.ContainsKey(file)) continue;
-
-            Files.Add(file);
-            PathHash.Add(file, GetHash(file));
-            CreateAButton(file).Content = GetTheImage(Thumbnails.GetThumbnail(file, output));
-            AdjustBtns();
-        }
-    }
-
-    public void ShowProperties(object sender, MouseEventArgs e, string file, TextBlock tb)
-    { 
-        Button button = sender as Button;
-
-        button.Background = System.Windows.Media.Brushes.LightGray;
-
-        if (tb.Text == "") {
-            FileInfo info = new(file);
-            BitmapSource img;
-
-            using (FileStream fs = new FileStream(info.FullName, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-                img = BitmapFrame.Create(fs);
-            }
-
-            const int padding = 10;
-            tb.Text =  $"res:    {img.PixelWidth} x {img.PixelHeight}\n" +
-                       $"name:   {info.Name}\n" +
-                       $"format: {info.Extension.Substring(1)}\n" +
-                       $"size:   {(((double)info.Length / (1024 * 1024))).ToString("#0.000")} MB\n";
-            tb.Background = System.Windows.Media.Brushes.Transparent;
-            tb.FontFamily = new("Cascadia Code Mono");
-            tb.FontSize = 11;
-            tb.Width = button.ActualWidth - padding;
-            tb.Height = button.ActualHeight - padding;
-            tb.VerticalAlignment = VerticalAlignment.Center;
-            tb.HorizontalAlignment = HorizontalAlignment.Center;
-            tb.TextAlignment = TextAlignment.Left;
-
-            tb.MouseRightButtonDown += (s, e) => HideProperties(button, file);
-        }
-        
-        button.Content = tb;
-    }
-
-    public void HideProperties(Button button, string file)
-    {
-        button.Content = GetTheImage(Thumbnails.GetThumbnail(file, output));
-        button.Background = System.Windows.Media.Brushes.Transparent;
-    }
-
-    public Image GetTheImage(string image_path)
-    {
-        Uri uri = new Uri(image_path);
-        Image image = new Image {
-            Source = new BitmapImage(uri)
-        };
-        return image;
-    }
-
     public void LoadAnImage(Button button, string file)
     {
-        string thumbnail_path = Thumbnails.GetThumbnail(file, output);
-        Dispatcher.Invoke(() => button.Content = GetTheImage(thumbnail_path));
+        string thumbnail_path = file_manager.GetThumbnail(file, file_manager.output);
+        Dispatcher.Invoke(() => button.Content = file_manager.GetImage(thumbnail_path));
     }
 
     public void setup_helper(List<string> files)
@@ -179,14 +91,14 @@ public partial class MainWindow : Window
         PhotoGrid.Children.Clear();
         buttons.Clear();
 
-        for (int i = 0; i < NThreads; i++) {
-            int start = i * FilesPerThread;
-            int end = (i + 1) * FilesPerThread;
-            if (end > Files.Count) end = Files.Count;
+        for (int i = 0; i < file_manager.NThreads; i++) {
+            int start = i * file_manager.FilesPerThread;
+            int end = (i + 1) * file_manager.FilesPerThread;
+            if (end > file_manager.Files.Count) end = file_manager.Files.Count;
 
-            Thread t = new(() => setup_helper(Files.Slice(start, end - start)));
+            Thread t = new(() => setup_helper(file_manager.Files.Slice(start, end - start)));
             t.IsBackground = true;
-            HashingThreads[i].Join();
+            file_manager.HashingThreads[i].Join();
             t.Start();
         }
     }
@@ -217,8 +129,8 @@ public partial class MainWindow : Window
 
     private void FileDalog_Click(object sender, RoutedEventArgs e)
     {
-        BrowseFile();
-        SavePath();
+        file_manager.BrowseFile();
+        file_manager.SavePath();
         GetReady();
     }
 
@@ -229,9 +141,9 @@ public partial class MainWindow : Window
 
     public void GetReady()
     {
-        GetFiles();
-        GetOutput();
-        GetHashes();
+        file_manager.GetFiles();
+        file_manager.GetOutput();
+        file_manager.GetHashes();
         setup();
         AdjustBtns();
     }
@@ -245,15 +157,15 @@ public partial class MainWindow : Window
     private void CycleR_Click(object sender, RoutedEventArgs e)
     {
         index++;
-        if (index < Files.Count) SetWallpaper.changeWallpaper(Files[index]);
-        else SetWallpaper.changeWallpaper(Files[Files.Count - 1]);
+        if (index < file_manager.Files.Count) SetWallpaper.changeWallpaper(file_manager.Files[index]);
+        else SetWallpaper.changeWallpaper(file_manager.Files[file_manager.Files.Count - 1]);
     }
 
     private void CycleL_Click(object sender, RoutedEventArgs e)
     {
         index--;
-        if (index >= 0) SetWallpaper.changeWallpaper(Files[index]);
-        else SetWallpaper.changeWallpaper(Files[0]);
+        if (index >= 0) SetWallpaper.changeWallpaper(file_manager.Files[index]);
+        else SetWallpaper.changeWallpaper(file_manager.Files[0]);
     }
 
     private void ToggleMode_Click(object sender, RoutedEventArgs e)
