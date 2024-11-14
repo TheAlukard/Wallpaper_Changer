@@ -12,6 +12,9 @@ public static class FileManaging
     public static string path = "";
     public static string output = "";
     public static readonly string InputPath = "WP_Changer\\Input_Path.txt";
+    public static int FilesPerThread;
+    public static int NThreads;
+    public static Thread[] HashingThreads;
     public static void BrowseFile()
     {
         OpenFolderDialog filedialog = new OpenFolderDialog();
@@ -96,13 +99,39 @@ public static class FileManaging
         string hash = GetHash(file);
         return hash + ex;
     }
+    
+    public static void GetKeyName(string file, out string result)
+    {
+        string ex = Path.GetExtension(file);
+        string hash = GetHash(file);
+        result = hash + ex;
+    }
+
+    public static void GetHashesHelper(List<string> files)
+    {
+        for (int i = 0; i < files.Count; i++) {
+            string hash = GetKeyName(files[i]);
+            lock (PathHash) {
+                PathHash.Add(files[i], hash);
+            }
+        }
+    }
 
     public static void GetHashes()
     {
         PathHash = new();
-        foreach (string file in Files) {
-            string hash = GetKeyName(file);
-            PathHash.Add(file, hash);
+        FilesPerThread = 50;
+        NThreads = (int)Math.Ceiling((double)Files.Count / FilesPerThread);
+        HashingThreads = new Thread[NThreads];
+
+        for (int i = 0; i < NThreads; i++) {
+            int start = i * FilesPerThread;
+            int end = (i + 1) * FilesPerThread;
+            if (end > Files.Count) end = Files.Count;
+            
+            HashingThreads[i] = new(() => GetHashesHelper(Files.Slice(start, end - start)));
+            HashingThreads[i].IsBackground = true;
+            HashingThreads[i].Start();
         }
     }
 }
