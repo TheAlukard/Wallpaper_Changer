@@ -25,7 +25,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        startup();                   
+        Closing += (e, s) => Application.Current.Shutdown();
+        startup();                  
     }
 
     public void startup()
